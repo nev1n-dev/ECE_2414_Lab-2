@@ -1,0 +1,166 @@
+function [compressed, compression_ratio, huffman_dict, avg_code_length] = ...
+         compress_with_block_huffman(sequence, block_size)
+% Compress sequence using block Huffman coding
+    
+    % Ensure sequence length is multiple of block_size
+    original_length = length(sequence);
+    padded_length = ceil(original_length / block_size) * block_size;
+    sequence_padded = [sequence, zeros(1, padded_length - original_length)];
+    
+    % Convert to blocks
+    num_blocks = padded_length / block_size;
+    blocks = reshape(sequence_padded, block_size, num_blocks)';
+    
+    % Convert blocks to decimal symbols for easier handling
+    block_symbols = zeros(num_blocks, 1);
+    for i = 1:num_blocks
+        block_bits = blocks(i, :);
+        block_symbols(i) = bin2dec(num2str(block_bits));
+    end
+    
+    % Calculate symbol frequencies
+    [unique_symbols, ~, symbol_idx] = unique(block_symbols);
+    symbol_counts = accumarray(symbol_idx, 1);
+    
+    % Build Huffman dictionary
+    probabilities = symbol_counts / num_blocks;
+    huffman_dict = build_huffman_tree(unique_symbols, probabilities);
+    
+    % Encode sequence
+    encoded_blocks = {};
+    total_compressed_bits = 0;
+    
+    for i = 1:num_blocks
+        symbol = block_symbols(i);
+        if isKey(huffman_dict, symbol)
+            code = huffman_dict(symbol);
+            encoded_blocks{i} = code;
+            total_compressed_bits = total_compressed_bits + length(code);
+        else
+            error('Symbol not found in Huffman dictionary');
+        end
+    end
+    
+    % Calculate metrics
+    original_bits = original_length;
+    compression_ratio = total_compressed_bits / original_bits;
+    avg_code_length = total_compressed_bits / num_blocks;
+    
+    % Return compressed data structure
+    compressed = struct(...
+        'encoded_blocks', {encoded_blocks}, ...
+        'original_length', original_length, ...
+        'block_size', block_size, ...
+        'huffman_dict', huffman_dict);
+end
+
+function decoded_sequence = decompress_block_huffman(compressed)
+% Decompress block Huffman encoded sequence
+    
+    encoded_blocks = compressed.encoded_blocks;
+    original_length = compressed.original_length;
+    block_size = compressed.block_size;
+    huffman_dict = compressed.huffman_dict;
+    
+    % Reverse dictionary for decoding
+    reverse_dict = containers.Map();
+    symbols = keys(huffman_dict);
+    for i = 1:length(symbols)
+        symbol = symbols{i};
+        code = huffman_dict(symbol);
+        reverse_dict(code) = symbol;
+    end
+    
+    % Decode blocks
+    num_blocks = length(encoded_blocks);
+    decoded_blocks = zeros(num_blocks, block_size);
+    
+    for i = 1:num_blocks
+        code = encoded_blocks{i};
+        symbol = reverse_dict(code);
+        
+        % Convert symbol back to binary block
+        binary_str = dec2bin(symbol, block_size);
+        decoded_blocks(i, :) = str2num(binary_str(:)); %#ok<ST2NM>
+    end
+    
+    % Convert back to sequence
+    decoded_sequence = reshape(decoded_blocks', 1, []);
+    decoded_sequence = decoded_sequence(1:original_length);
+end
+
+function huffman_dict = build_huffman_tree(symbols, probabilities)
+% Build Huffman coding dictionary (optimized version)
+    
+    % Create initial nodes
+    nodes = cell(length(symbols), 1);
+    for i = 1:length(symbols)
+        nodes{i} = struct(...
+            'symbol', symbols(i), ...
+            'prob', probabilities(i), ...
+            'code', '', ...
+            'left', [], ...
+            'right', []);
+    end
+    
+    % Build tree using min-heap approach
+    while length(nodes) > 1
+        % Sort by probability (could be optimized with proper heap)
+        [~, idx] = sort(cellfun(@(x) x.prob, nodes));
+        nodes = nodes(idx);
+        
+        % Combine two lowest probability nodes
+        left = nodes{1};
+        right = nodes{2};
+        
+        % Update codes for all children
+        left = update_codes(left, '0');
+        right = update_codes(right, '1');
+        
+        % Create parent node
+        parent = struct(...
+            'symbol', [], ...
+            'prob', left.prob + right.prob, ...
+            'code', '', ...
+            'left', left, ...
+            'right', right);
+        
+        nodes = [nodes(3:end); {parent}];
+    end
+    
+    % Extract codes from tree
+    huffman_dict = extract_codes_from_tree(nodes{1});
+end
+
+function node = update_codes(node, prefix)
+% Recursively update Huffman codes
+    if isempty(node.left) && isempty(node.right)
+        node.code = [prefix node.code];
+    else
+        if ~isempty(node.left)
+            node.left = update_codes(node.left, prefix);
+        end
+        if ~isempty(node.right)
+            node.right = update_codes(node.right, prefix);
+        end
+    end
+end
+
+function codes = extract_codes_from_tree(node)
+% Extract all codes from Huffman tree
+    codes = containers.Map('KeyType', 'double', 'ValueType', 'char');
+    traverse_tree(node, codes);
+end
+
+function traverse_tree(node, codes)
+    if isempty(node.left) && isempty(node.right)
+        codes(node.symbol) = node.code;
+    else
+        if ~isempty(node.left)
+            traverse_tree(node.left, codes);
+        end
+        if ~isempty(node.right)
+            traverse_tree(node.right, codes);
+        end
+    end
+end
