@@ -1,0 +1,77 @@
+=== Enhanced Graph Compression with Block Huffman ===
+
+1. Testing Block Huffman on Bernoulli Sequences
+
+Testing p = 0.1:
+  Block size  2: Compression ratio = 0.6404, Avg code length = 1.2808
+  Block size  4: Compression ratio = 0.4867, Avg code length = 1.9468
+  Block size  8: Compression ratio = 0.4592, Avg code length = 3.6736
+  Block size 16: Compression ratio = 0.4022, Avg code length = 6.4352
+
+Testing p = 0.3:
+  Block size  2: Compression ratio = 0.9001, Avg code length = 1.8002
+  Block size  4: Compression ratio = 0.8890, Avg code length = 3.5560
+  Block size  8: Compression ratio = 0.8633, Avg code length = 6.9064
+  Block size 16: Compression ratio = 0.5794, Avg code length = 9.2704
+
+Testing p = 0.5:
+  Block size  2: Compression ratio = 1.0000, Avg code length = 2.0000
+  Block size  4: Compression ratio = 1.0000, Avg code length = 4.0000
+  Block size  8: Compression ratio = 0.9845, Avg code length = 7.8760
+  Block size 16: Compression ratio = 0.5847, Avg code length = 9.3552
+
+Testing p = 0.7:
+  Block size  2: Compression ratio = 0.8999, Avg code length = 1.7998
+  Block size  4: Compression ratio = 0.8871, Avg code length = 3.5484
+  Block size  8: Compression ratio = 0.8618, Avg code length = 6.8944
+  Block size 16: Compression ratio = 0.5807, Avg code length = 9.2912
+Bernoulli analysis plot saved.
+
+2. Testing Enhanced ER Graph Compression
+========================================
+Testing n=10, p=0.3: Best compression = 0.1111
+Testing n=10, p=0.5: Best compression = 0.1111
+Testing n=10, p=0.7: Best compression = 0.1111
+Testing n=20, p=0.1: Best compression = 0.2316
+Testing n=20, p=0.3: Best compression = 0.2316
+Testing n=20, p=0.5: Best compression = 0.2316
+Testing n=20, p=0.7: Best compression = 0.2316
+Testing n=50, p=0.1: Best compression = 0.3363
+Testing n=50, p=0.3: Best compression = 0.3967
+Testing n=50, p=0.5: Best compression = 0.3984
+Testing n=50, p=0.7: Best compression = 0.3984
+Testing n=100, p=0.1: Best compression = 0.3806
+Testing n=100, p=0.3: Best compression = 0.5204
+Testing n=100, p=0.5: Best compression = 0.5228
+Testing n=100, p=0.7: Best compression = 0.5204
+Graph compression analysis plot saved.
+
+3. Theoretical Analysis
+======================
+
+Theoretical Analysis:
+p	Entropy	Theoretical Limit
+--------------------------------
+0.1	0.4690	0.4690
+0.3	0.8813	0.8813
+0.5	1.0000	1.0000
+0.7	0.8813	0.8813
+
+Block Size Effects:
+• Larger blocks capture more statistical structure
+• Block size 16 has 65536 possible symbols
+• Computational complexity increases with block size
+
+4. Verification Tests
+====================
+Running enhanced verification tests...
+? All block Huffman compression tests PASSED
+? All ER graph compression tests PASSED
+Compression improvement for p=0.1:
+  Single symbol: 1.0000
+  Block size 8:  0.4640
+  Improvement:   53.6%
+? Compression improvement confirmed
+
+=== Experiment Complete ===
+>> 
