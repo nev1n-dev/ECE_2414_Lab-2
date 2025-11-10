@@ -1,0 +1,74 @@
+%% Enhanced Graph Compression with Block Huffman Coding
+clear; clc; close all;
+
+fprintf('=== Enhanced Graph Compression with Block Huffman ===\n\n');
+
+% Parameters
+n_values = [10, 20, 50, 100];        
+p_values = [0.1, 0.3, 0.5, 0.7];     
+block_sizes = [2, 4, 8, 16];         
+test_sequence_length = 10000;         
+
+% Create results directory for images
+if ~exist('compression_images', 'dir')
+    mkdir('compression_images');
+end
+
+fprintf('1. Testing Block Huffman on Bernoulli Sequences\n');
+
+% Test block Huffman on Bernoulli sequences
+bernoulli_results = [];
+for p = p_values
+    fprintf('\nTesting p = %.1f:\n', p);
+    sequence = generate_bernoulli_sequence(test_sequence_length, p);
+    
+    for k = block_sizes
+        [compressed_seq, compression_ratio, ~, avg_code_length] = ...
+            compress_with_block_huffman(sequence, k);
+        
+        bernoulli_results(end+1,:) = [p, k, compression_ratio, avg_code_length];
+        fprintf('  Block size %2d: Compression ratio = %.4f, Avg code length = %.4f\n', ...
+                k, compression_ratio, avg_code_length);
+    end
+end
+
+% Plot Bernoulli sequence results
+plot_bernoulli_results(bernoulli_results, p_values, block_sizes);
+
+fprintf('\n2. Testing Enhanced ER Graph Compression\n');
+
+% Test ER graph compression with block Huffman
+graph_results = [];
+for n = n_values
+    for p = p_values
+        if n*p > 1 % Ensure reasonable graph density
+            fprintf('Testing n=%d, p=%.1f: ', n, p);
+            adjacency_matrix = generate_er_graph(n, p);
+            
+            % Test different block sizes
+            best_ratio = 1.0;
+            for k = block_sizes
+                [compressed_graph, compression_ratio, original_bits] = ...
+                    compress_er_graph_block(adjacency_matrix, k);
+                
+                graph_results(end+1,:) = [n, p, k, compression_ratio, original_bits];
+                
+                if compression_ratio < best_ratio
+                    best_ratio = compression_ratio;
+                end
+            end
+            fprintf('Best compression = %.4f\n', best_ratio);
+        end
+    end
+end
+
+% Plot graph compression results
+plot_graph_compression_results(graph_results, n_values, p_values, block_sizes);
+
+fprintf('\n3. Theoretical Analysis\n');
+analyze_theoretical_limits(p_values, block_sizes);
+
+fprintf('\n4. Verification Tests\n');
+run_enhanced_verification_tests();
+fprintf('\n=== Experiment Complete ===\n');
+fprintf('Images saved in ''compression_images'' directory\n');
