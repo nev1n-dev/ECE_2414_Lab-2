@@ -1,0 +1,251 @@
+function plot_bernoulli_results(results, p_values, block_sizes)
+% Plot results for Bernoulli sequence compression
+    
+    figure('Position', [100, 100, 1200, 800]);
+    
+    % Subplot 1: Compression ratio vs block size for different p
+    subplot(2,2,1);
+    hold on;
+    colors = lines(length(p_values));
+    
+    for i = 1:length(p_values)
+        p = p_values(i);
+        mask = results(:,1) == p;
+        p_results = results(mask, :);
+        
+        plot(block_sizes, p_results(:,3), 'o-', ...
+             'Color', colors(i,:), 'LineWidth', 2, ...
+             'MarkerSize', 6, 'DisplayName', sprintf('p = %.1f', p));
+    end
+    
+    xlabel('Block Size');
+    ylabel('Compression Ratio');
+    title('Compression Ratio vs Block Size');
+    legend('show', 'Location', 'best');
+    grid on;
+    set(gca, 'XScale', 'log');
+    
+    % Subplot 2: Average code length vs block size
+    subplot(2,2,2);
+    hold on;
+    
+    for i = 1:length(p_values)
+        p = p_values(i);
+        mask = results(:,1) == p;
+        p_results = results(mask, :);
+        
+        plot(block_sizes, p_results(:,4), 's-', ...
+             'Color', colors(i,:), 'LineWidth', 2, ...
+             'MarkerSize', 6, 'DisplayName', sprintf('p = %.1f', p));
+    end
+    
+    xlabel('Block Size');
+    ylabel('Average Code Length (bits/block)');
+    title('Average Code Length vs Block Size');
+    legend('show', 'Location', 'best');
+    grid on;
+    set(gca, 'XScale', 'log');
+    
+    % Subplot 3: Comparison with theoretical limits
+    subplot(2,2,3);
+    theoretical_limits = [];
+    achieved_ratios = [];
+    
+    for i = 1:length(p_values)
+        p = p_values(i);
+        entropy = -p*log2(p) - (1-p)*log2(1-p);
+        theoretical_limits(i) = entropy;
+        
+        % Get best achieved ratio (largest block size)
+        mask = (results(:,1) == p) & (results(:,2) == max(block_sizes));
+        achieved_ratios(i) = results(mask, 3);
+    end
+    
+    plot(p_values, theoretical_limits, 'ro-', 'LineWidth', 2, ...
+         'MarkerSize', 8, 'DisplayName', 'Theoretical Limit');
+    hold on;
+    plot(p_values, achieved_ratios, 'bs-', 'LineWidth', 2, ...
+         'MarkerSize', 8, 'DisplayName', 'Achieved (Best Block Size)');
+    
+    xlabel('Probability p');
+    ylabel('Compression Ratio');
+    title('Theoretical vs Achieved Compression');
+    legend('show', 'Location', 'best');
+    grid on;
+    
+    % Subplot 4: Efficiency (achieved/theoretical)
+    subplot(2,2,4);
+    efficiency = achieved_ratios ./ theoretical_limits;
+    plot(p_values, efficiency, 'g^-', 'LineWidth', 2, 'MarkerSize', 8);
+    xlabel('Probability p');
+    ylabel('Efficiency (Achieved / Theoretical)');
+    title('Coding Efficiency');
+    grid on;
+    ylim([0.5, 1.1]);
+    
+    % Save figure
+    saveas(gcf, 'compression_images/bernoulli_compression_analysis.png', 'png');
+    fprintf('Bernoulli analysis plot saved.\n');
+end
+
+function plot_graph_compression_results(results, n_values, p_values, block_sizes)
+% Plot results for ER graph compression
+    
+    figure('Position', [100, 100, 1200, 600]);
+    
+    % Subplot 1: Compression ratio vs graph size for different p
+    subplot(1,2,1);
+    hold on;
+    colors = lines(length(p_values));
+    
+    for i = 1:length(p_values)
+        p = p_values(i);
+        mask = (results(:,2) == p) & (results(:,3) == max(block_sizes));
+        p_results = results(mask, :);
+        
+        if ~isempty(p_results)
+            plot(p_results(:,1), p_results(:,4), 'o-', ...
+                 'Color', colors(i,:), 'LineWidth', 2, ...
+                 'MarkerSize', 6, 'DisplayName', sprintf('p = %.1f', p));
+        end
+    end
+    
+    xlabel('Graph Size (n)');
+    ylabel('Compression Ratio');
+    title('ER Graph Compression vs Graph Size');
+    legend('show', 'Location', 'best');
+    grid on;
+    set(gca, 'XScale', 'log');
+    
+    % Subplot 2: Compression ratio vs edge probability for different sizes
+    subplot(1,2,2);
+    hold on;
+    colors = lines(length(n_values));
+    
+    for i = 1:length(n_values)
+        n = n_values(i);
+        mask = (results(:,1) == n) & (results(:,3) == max(block_sizes));
+        n_results = results(mask, :);
+        
+        if ~isempty(n_results)
+            plot(n_results(:,2), n_results(:,4), 's-', ...
+                 'Color', colors(i,:), 'LineWidth', 2, ...
+                 'MarkerSize', 6, 'DisplayName', sprintf('n = %d', n));
+        end
+    end
+    
+    xlabel('Edge Probability p');
+    ylabel('Compression Ratio');
+    title('ER Graph Compression vs Edge Probability');
+    legend('show', 'Location', 'best');
+    grid on;
+    
+    % Save figure
+    saveas(gcf, 'compression_images/graph_compression_analysis.png', 'png');
+    fprintf('Graph compression analysis plot saved.\n');
+end
+
+function analyze_theoretical_limits(p_values, block_sizes)
+% Analyze theoretical compression limits
+    
+    fprintf('\nTheoretical Analysis:\n');
+    fprintf('p\tEntropy\tTheoretical Limit\n');
+   
+    for p = p_values
+        entropy = -p*log2(p) - (1-p)*log2(1-p);
+        fprintf('%.1f\t%.4f\t%.4f\n', p, entropy, entropy);
+    end
+    
+    fprintf('\nBlock Size Effects:\n');
+    fprintf('• Larger blocks capture more statistical structure\n');
+    fprintf('• Block size %d has %d possible symbols\n', ...
+            max(block_sizes), 2^max(block_sizes));
+    fprintf('• Computational complexity increases with block size\n');
+end
+
+function run_enhanced_verification_tests()
+% Run comprehensive verification tests
+    
+    fprintf('Running enhanced verification tests...\n');
+    
+    % Test 1: Block Huffman compression-decompression
+    test_passed = true;
+    
+    for p = [0.1, 0.5, 0.9]
+        for k = [2, 4, 8]
+            test_seq = generate_bernoulli_sequence(1000, p);
+            compressed = compress_with_block_huffman(test_seq, k);
+            decoded_seq = decompress_block_huffman(compressed);
+            
+            if ~isequal(test_seq, decoded_seq)
+                fprintf('✗ Block Huffman test FAILED for p=%.1f, k=%d\n', p, k);
+                test_passed = false;
+            end
+        end
+    end
+    
+    if test_passed
+        fprintf('✓ All block Huffman compression tests PASSED\n');
+    end
+    
+    % Test 2: ER graph compression-decompression
+    test_passed = true;
+    
+    for n = [10, 20]
+        for p = [0.3, 0.7]
+            for k = [2, 8]
+                test_graph = generate_er_graph(n, p);
+                compressed = compress_er_graph_block(test_graph, k);
+                reconstructed = decompress_er_graph_block(compressed, n);
+                
+                if ~isequal(test_graph, reconstructed)
+                    fprintf('✗ ER graph compression test FAILED for n=%d, p=%.1f, k=%d\n', n, p, k);
+                    test_passed = false;
+                end
+            end
+        end
+    end
+    
+    if test_passed
+        fprintf('✓ All ER graph compression tests PASSED\n');
+    end
+    
+    % Test 3: Compression ratio improvement
+    test_seq = generate_bernoulli_sequence(10000, 0.1);
+    
+    % Single symbol (original approach)
+    [~, ratio_single, ~, ~] = compress_with_block_huffman(test_seq, 1);
+    
+    % Block approach
+    [~, ratio_block, ~, ~] = compress_with_block_huffman(test_seq, 8);
+    
+    fprintf('Compression improvement for p=0.1:\n');
+    fprintf('  Single symbol: %.4f\n', ratio_single);
+    fprintf('  Block size 8:  %.4f\n', ratio_block);
+    fprintf('  Improvement:   %.1f%%\n', (ratio_single - ratio_block) / ratio_single * 100);
+    
+    if ratio_block < ratio_single
+        fprintf('✓ Compression improvement confirmed\n');
+    else
+        fprintf('✗ No compression improvement\n');
+    end
+end
+
+function sequence = generate_bernoulli_sequence(n, p)
+% Generate Bernoulli sequence with parameter p
+    sequence = rand(1, n) < p;
+end
+
+function adjacency_matrix = generate_er_graph(n, p)
+% Generate Erdos-Renyi graph G(n, p)
+    adjacency_matrix = zeros(n, n);
+    
+    for i = 1:n
+        for j = i+1:n
+            if rand() < p
+                adjacency_matrix(i, j) = 1;
+                adjacency_matrix(j, i) = 1;
+            end
+        end
+    end
+end
