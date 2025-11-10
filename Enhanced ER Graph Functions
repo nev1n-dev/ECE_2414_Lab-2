@@ -1,0 +1,39 @@
+function [compressed, compression_ratio, original_bits] = ...
+         compress_er_graph_block(adjacency_matrix, block_size)
+% Compress ER graph using block Huffman coding
+    
+    n = size(adjacency_matrix, 1);
+    
+    % Extract upper triangular part (excluding diagonal)
+    sequence = [];
+    for i = 1:n
+        for j = i+1:n
+            sequence = [sequence adjacency_matrix(i, j)];
+        end
+    end
+    
+    % Compress using block Huffman
+    [compressed, compression_ratio, ~, ~] = ...
+        compress_with_block_huffman(sequence, block_size);
+    original_bits = length(sequence);
+end
+
+function reconstructed = decompress_er_graph_block(compressed, n)
+% Reconstruct ER graph from block Huffman compressed data
+    
+    % Decompress sequence
+    sequence = decompress_block_huffman(compressed);
+    
+    % Reconstruct adjacency matrix
+    reconstructed = zeros(n, n);
+    idx = 1;
+    for i = 1:n
+        for j = i+1:n
+            if idx <= length(sequence)
+                reconstructed(i, j) = sequence(idx);
+                reconstructed(j, i) = sequence(idx);
+                idx = idx + 1;
+            end
+        end
+    end
+end
